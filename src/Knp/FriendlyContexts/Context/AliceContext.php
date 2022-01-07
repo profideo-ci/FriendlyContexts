@@ -36,23 +36,19 @@ class AliceContext extends Context
     {
         $persistable = $this->getPersistableClasses();
 
-        foreach ($fixtures as $id => $fixture) {
-            if (in_array($id, $files)) {
-                foreach ($loader->load($fixture) as $object) {
-                    if (in_array(get_class($object), $persistable)) {
-                        $this->getEntityManager()->persist($object);
-                    }
-                }
-
-                $this->getEntityManager()->flush();
+        foreach ($loader->load($fixtures) as $object) {
+            if (in_array(get_class($object), $persistable)) {
+                $this->getEntityManager()->persist($object);
             }
         }
+
+        $this->getEntityManager()->flush();
     }
 
     private function getPersistableClasses()
     {
         $persistable = array();
-        $metadatas   = $this->getEntityManager()->getMetadataFactory()->getAllMetadata();
+        $metadatas  = $this->getEntityManager()->getMetadataFactory()->getAllMetadata();
 
         foreach ($metadatas as $metadata) {
             if (isset($metadata->isEmbeddedClass) && $metadata->isEmbeddedClass) {
@@ -74,8 +70,7 @@ class AliceContext extends Context
                 $this
                     ->getRecordBag()
                     ->getCollection($reflection->getName())
-                    ->attach($entity, $values)
-                ;
+                    ->attach($entity, $values);
                 $reflection = $reflection->getParentClass();
             } while (false !== $reflection);
         }

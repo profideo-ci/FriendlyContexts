@@ -3,40 +3,95 @@
 namespace Knp\FriendlyContexts\Alice\Fixtures;
 
 use Knp\FriendlyContexts\Alice\ProviderResolver;
-use Nelmio\Alice\Fixtures\Loader as BaseLoader;
+use Nelmio\Alice\Loader\NativeLoader as BaseLoader;
+
+use Nelmio\Alice\DataLoaderInterface;
+use Nelmio\Alice\FixtureBuilderInterface;
+use Nelmio\Alice\GeneratorInterface;
+use Nelmio\Alice\IsAServiceTrait;
+use Nelmio\Alice\ObjectSet;
+
+class SimpleDataLoader implements DataLoaderInterface
+{
+    use IsAServiceTrait;
+
+    /**
+     * @var FixtureBuilderInterface
+     */
+    private $builder;
+
+    /**
+     * @var GeneratorInterface
+     */
+    private $generator;
+
+    public function __construct(FixtureBuilderInterface $fixtureBuilder, GeneratorInterface $generator)
+    {
+        $this->builder = $fixtureBuilder;
+        $this->generator = $generator;
+    }
+
+    public $fixtureSet;
+
+    /**
+     * @inheritdoc
+     */
+    public function loadData(array $data, array $parameters = [], array $objects = []) : ObjectSet
+    {
+        $fixtureSet = $this->builder->build($data, $parameters, $objects);
+        $this->fixtureSet = $fixtureSet;
+
+        return $this->generator->generate($fixtureSet);
+    }
+}
+
 
 class Loader extends BaseLoader
 {
-    private $cache = [];
+    private $fixtureSet;
+    private $fixtureData;
+    private $loader;
+    private $dataLoader;
 
     public function __construct($locale, ProviderResolver $providers)
     {
-        parent::__construct($locale, $providers->all());
+        parent::__construct();
+        $this->loader = $this->createFilesLoader();
+        $this->dataLoader = $this->getDataLoader();
     }
 
     public function getCache()
     {
-        return $this->cache;
+        $cache = [];
+        foreach ($this->fixtureSet->getFixtures() as $fixture) {
+            $spec = [];
+            foreach ($fixture->getSpecs()->getProperties()->getIterator() as $property) {
+                $spec[] = $property->getValue();
+            }
+            $cache[] = [$spec, $this->fixtureData[$fixture->getId()]];
+        }
+
+        return $cache;
     }
 
     public function clearCache()
     {
-        $this->cache = [];
+        $this->fixtureSet = null;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function instantiateFixtures(array $fixtures)
+    public function load($filename)
     {
-        parent::instantiateFixtures($fixtures);
+        $this->fixtureData = $this->loader->loadFiles($filename)->getObjects();
+        $this->fixtureSet = $this->dataLoader->fixtureSet;
 
-        foreach ($fixtures as $fixture) {
-            $spec = array_map(function ($property) {
-                return $property->getValue();
-            }, $fixture->getProperties());
+        return $this->fixtureData;
+    }
 
-            $this->cache[] = [ $spec, $this->objects->get($fixture->getName()) ];
-        }
+    protected function createDataLoader() : DataLoaderInterface
+    {
+        return new SimpleDataLoader(
+            $this->getFixtureBuilder(),
+            $this->getGenerator()
+        );
     }
 }

@@ -88,7 +88,7 @@ class Collection
     protected function mergeHeaders($headers)
     {
         foreach ($headers as $header) {
-            if (!in_array($header, $this->headers)) {
+            if (!in_array($header, $this->headers, true)) {
                 $this->headers[] = $header;
             }
         }
