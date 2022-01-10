@@ -104,7 +104,7 @@ services:
             - "@specifications.locator.filesystem_feature"
             - "@friendly.definition.definition_finder"
             - "@friendly.call.call_center"
-            - %friendly.smartTag%
+            - "%friendly.smartTag%"
         tags:
             - { name: environment.reader }
 
