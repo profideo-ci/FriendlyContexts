@@ -3,8 +3,7 @@
 namespace Knp\FriendlyContexts\Alice\Fixtures;
 
 use Knp\FriendlyContexts\Alice\ProviderResolver;
-use Nelmio\Alice\Loader\NativeLoader as BaseLoader;
-
+use App\Faker\Loader\NativeLoader as BaseLoader;
 use Nelmio\Alice\DataLoaderInterface;
 use Nelmio\Alice\FixtureBuilderInterface;
 use Nelmio\Alice\GeneratorInterface;
@@ -63,12 +62,14 @@ class Loader extends BaseLoader
     public function getCache()
     {
         $cache = [];
-        foreach ($this->fixtureSet->getFixtures() as $fixture) {
-            $spec = [];
-            foreach ($fixture->getSpecs()->getProperties()->getIterator() as $property) {
-                $spec[] = $property->getValue();
+        if ($this->fixtureSet) {
+            foreach ($this->fixtureSet->getFixtures() as $fixture) {
+                $spec = [];
+                foreach ($fixture->getSpecs()->getProperties()->getIterator() as $property) {
+                    $spec[] = $property->getValue();
+                }
+                $cache[] = [$spec, $this->fixtureData[$fixture->getId()]];
             }
-            $cache[] = [$spec, $this->fixtureData[$fixture->getId()]];
         }
 
         return $cache;
@@ -81,7 +82,7 @@ class Loader extends BaseLoader
 
     public function load($filename)
     {
-        $this->fixtureData = $this->loader->loadFiles($filename)->getObjects();
+        $this->fixtureData = $this->loader->loadFiles([$filename])->getObjects();
         $this->fixtureSet = $this->dataLoader->fixtureSet;
 
         return $this->fixtureData;
